@@ -1,38 +1,54 @@
 # SignedChat frontend
 
-React + TypeScript + Vite, with Tailwind CSS and shadcn-compatible components.
+Plain HTML, CSS, and JavaScript. No React, TypeScript, npm, downloaded libraries, or build step. All browser assets are local.
 
-## Start
+## Run on Windows
 
-Requires Node.js 22+ and the [separate Java backend](https://github.com/mohnishc07/messaging-using-digital-signatures) running on port 8080. In the backend checkout, start it with `.\mvnw.cmd spring-boot:run` on Windows or `./mvnw spring-boot:run` on macOS/Linux.
+1. Start the [Java backend](https://github.com/mohnishc07/messaging-using-digital-signatures) in its own terminal:
 
-In this frontend repository:
+   ```powershell
+   .\mvnw.cmd spring-boot:run
+   ```
+
+2. In this frontend repository, run:
+
+   ```powershell
+   .\start.cmd
+   ```
+
+3. Open **http://127.0.0.1:5173**. Keep both terminals running. Create Alice and Bob, then send from either panel.
+
+The launcher uses JDK 21+, already required by the backend. It compiles the tiny development server in memory with Java's source launcher; no installation or package manager is involved. On macOS/Linux use `java tools/DevServer.java` from this directory. Stop with Ctrl+C.
+
+To change the frontend port or backend URL:
 
 ```powershell
-npm ci
-npm run dev
+.\start.cmd 5174 http://127.0.0.1:8080
 ```
 
-Open the Local URL printed by Vite. Create Alice and Bob using the two panels; existing users are loaded automatically. Send from either composer. Enter sends; Shift + Enter inserts a new line. Newlines and other message content are signed exactly as entered. Whitespace-only messages are disabled in the interface.
+The local server binds only to 127.0.0.1 and forwards `/api` requests to the backend. This avoids cross-origin issues without changing backend code. It is a development helper, not a production server.
 
-Delivered messages appear in both panels after the inbox refresh. Expand **Inspect signature** for sender, recipient, signature, and JSON copying. **Public key** expands the key returned by the backend. **Refresh inboxes** picks up externally delivered messages. There is no background polling.
+## Alternative: serve directly from Spring Boot
 
-## Configuration
+Copy **index.html**, **styles.css**, **api.js**, and **app.js** into the backend's `src/main/resources/static/` directory. Restart the backend and open **http://localhost:8080**. No separate frontend process is needed. Do not copy the Java development helper, Git metadata, or tests into the backend.
 
-Copy `.env.example` to `.env.local` to change the backend address; restart Vite afterward. The development proxy forwards `/api` to `BACKEND_URL`. Production hosting must forward `/api` to the backend, or set `VITE_API_BASE_URL` at build time and configure backend CORS appropriately. Environment values prefixed VITE_ are public: never put secrets there.
+Opening index.html by double-clicking lets you see the layout, but API calls require an HTTP server. Use either method above for working messaging.
 
-```powershell
-npm run build
-npm test
-```
+## Files
+
+- `index.html`: layout and reusable chat-panel template.
+- `styles.css`: responsive layout, styles, and accessibility helpers.
+- `app.js`: DOM events, user creation, chat rendering, and delivery feedback.
+- `api.js`: Fetch API requests, errors, and conversation reconciliation.
+- `tools/DevServer.java` and `start.cmd`: optional local static server and API proxy.
+- `tests.html` and `tests.js`: dependency-free browser tests.
+
+## Check
+
+Start the local server and open **http://127.0.0.1:5173/tests.html**. The test page checks request encoding, exact message content, rejected delivery, validation and network errors, message ordering, and duplicate messages using isolated responses. No backend is required for these checks.
+
+For live verification: create Alice and Bob, send in both directions, expand **Inspect signature**, view **Public key**, and refresh the inboxes. On mobile, switch between Alice and Bob with the buttons above the chat. Enter sends; Shift+Enter adds a newline. Message content is transmitted exactly as entered; whitespace-only messages are disabled in the UI. Messages and signatures are rendered as text, including content containing HTML.
 
 ## Current scope
 
-- Side-by-side Alice/Bob messaging; mobile switches between panels.
-- Real API integration, user creation, public-key viewing, inbox refresh, signature inspection, network and delivery error handling.
-- User panels represent demonstration identities, not independent authenticated sessions. The available backend (fb0e479) has no authentication endpoints.
-- Accepted badges reflect backend inbox acceptance, not independent browser verification.
-- Messages are plaintext. No encryption, replay protection, or key fingerprint validation is claimed.
-- The old backend supplies no message IDs or timestamps. The interface preserves observed message order during use, but cannot reconstruct historical interleaving across the two inboxes after a page reload. This can be improved once the backend returns ordering metadata.
-- Inboxes and keys disappear on backend restart. Refresh to synchronize the frontend afterward.
-- Security Lab and authentication integration will follow the updated backend contract.
+The interface matches backend commit fb0e479. Panels are demonstration identities, not authenticated sessions. Accepted badges reflect backend acceptance, not independent browser verification. Keys and inboxes are in memory and disappear on backend restart. Refresh to synchronize after restart. Messages are plaintext; encryption, replay protection, and fingerprint validation are not claimed. The old backend has no timestamps, so the interface preserves observed message order during use but cannot reconstruct historical interleaving across separate inboxes after reload. External messages are fetched with **Refresh inboxes**; there is no polling. Authentication and the Security Lab can be connected when the updated backend is available.
